@@ -1,19 +1,35 @@
 import pygame
 import sys
 
+class Box:
+  def __init__(self , i , j):
+    rect_width = 50
+    rect_height = 50
+    rect_position = (i * 150 + 300, j * 150 + 100)
+    self.image_space_rect = pygame.Rect(rect_position[0], rect_position[1], rect_width, rect_height)
+    self.value = None
+    # self.image = ""
+    # self.img_rect = self.image.get_rect()
+    
 class Board:
-  def __init__(self):
+  def __init__(self , font):
     self.image = pygame.image.load('./assets/board.png')
     self.grid = [
        [0,0,0],
        [0,0,0],
        [0,0,0]
       ]
+    for i in range(3):
+        for j in range(3):
+          box = Box(i , j)
+          self.grid[i][j] = box
+          # self.image.blit(box.text_surface, box.text_rect)
     
-  def getBoardImage(self,font):
-    value1 = font.render(str(self.grid[0][0]) , True , (0,0,0))
-    self.image.blit(value1 , (300,100))
+
+  def getBoardImage(self):
     return self.image
+  # def getBoardGrid(self):
+  #   return self.grid
   
   def showBoardGrid(self):
     pass
@@ -23,29 +39,28 @@ class Board:
     
     
 class Game:
-  def __init__(self):
-    self.board = Board()
-    self.player1 = Player('./assets/o.png' , 'X')
-    self.player2 = Player("./assets/o.png" , 'O')
+  def __init__(self , font):
+    self.board = Board(font)
+    self.playerX = Player('./assets/x.png' , 'X')
+    self.playerO = Player("./assets/o.png" , 'O')
     self.end = False
-    
-  def getBoard(self):
-    return self.board
-  
-  def getPlayer1(self):
-    return self.player1
-  
-  def getPlayer2(self):
-    return self.player2
-  
-  def getEnd(self):
-    return self.end
+    self.playerTurn = self.playerX
   
   def start_game(self):
     pass
   
   def check_winner(self):
     pass
+  
+  def isEnd(self):
+    self.end = all(box.value is not None for row in self.board.grid for box in row)
+  
+  def switchTurn(self):
+    if self.end == False:
+      if self.playerTurn == self.playerX:
+        self.playerTurn = self.playerO
+      else:
+        self.playerTurn = self.playerX
   
   
   
@@ -56,15 +71,7 @@ class Player:
     self.image = pygame.image.load(text)
     self.symbol = symbol
     self.winner = False
-  
-  def getPlayerImage(self):
-    return self.image
-  
-  def getPlayerSymbol(self):
-    return self.symbol
-  
-  def getIsWinner(self):
-    return self.winner
+    self.boxes = []
   
   def play(self):
     # check the nature of the player in order to render the right symbol
@@ -80,23 +87,51 @@ if __name__ == "__main__":
     screen = pygame.display.set_mode((1000, 700))
     text_font = pygame.font.SysFont(None ,30)
     clock = pygame.time.Clock()
-    
-
+    game = Game(text_font)
     while True:
         
       for event in pygame.event.get():
           if event.type == pygame.QUIT:
               sys.exit()
-          if event.type == pygame.MOUSEBUTTONDOWN:
+          
             
 
       screen.fill("white")
       # RENDER YOUR GAME HERE
-      game = Game()
-      screen.blit(game.getBoard().getBoardImage(text_font) , (0,0))
-    
       
+      screen.blit(game.board.getBoardImage() , (0,0))
+      mouse_pos = pygame.mouse.get_pos()
+      mouse_click = pygame.mouse.get_pressed()
+      for i in range(3):
+        for j in range(3): 
+          box = game.board.grid[i][j]
+          x_pos = game.board.grid[i][j].image_space_rect.x
+          y_pos = game.board.grid[i][j].image_space_rect.y
+          if mouse_click[0]: 
+            if x_pos - 50 <= mouse_pos[0] <=  x_pos + 50 and y_pos - 50 <= mouse_pos[1] <=  y_pos + 50 :
+              game.isEnd()
+              print(f"Mouse clicked at value{i}{j}")
+              print("end : " , game.end)
+              if box.value is None: # so we dont replace existing value
+                if game.playerTurn == game.playerX:
+                  box.value =  "X"
+                  game.playerX.boxes.append(box)
+                  game.switchTurn()
+                else:
+                  box.value =  "O"
+                  game.playerO.boxes.append(box)
+                  game.switchTurn()
+                
+                
       
+          if box.value ==  "X":
+            x_img = pygame.image.load('./assets/x.png')
+            x_img = pygame.transform.scale(x_img , (100,100))
+            screen.blit(x_img, (x_pos - 50, y_pos - 50))
+          if box.value == "O":
+            o_img = pygame.image.load('./assets/o.png')
+            o_img = pygame.transform.scale(o_img , (100,100))
+            screen.blit(o_img, (x_pos - 50, y_pos - 50))
 
       # flip() the display to put your work on screen
       pygame.display.flip()
